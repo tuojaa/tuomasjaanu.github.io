@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+
+    <meta http-equiv="cache-control" content="max-age=0" />
+    <meta http-equiv="cache-control" content="no-cache" />
+    <meta http-equiv="expires" content="0" />
+    <meta http-equiv="expires" content="Tue, 01 Jan 2045 1:00:00 GMT" />
+    <meta http-equiv="pragma" content="no-cache" />
+    <title>scope</title>
+
+    <style>
+      BODY {
+        margin: 0px;
+        padding: 0px;
+        font-family: Arial, Helvetica, sans-serif;
+        background-color: black;
+        color: black;
+        font-size: 17px;
+        overflow: hidden;
+      }
+
+      #scope {
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        width: 1024px;
+        height: 1024px;
+      }
+
+      .startButton {
+        width: 100%;
+        height: 50px;
+        background-color: orangered;
+        border: 1px solid;
+        color: black;
+        font-size: 32px;
+        cursor: pointer;
+      }
+
+      .modal {
+        display: block;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgb(0, 0, 0);
+        background-color: rgba(0, 0, 0, 0.6);
+      }
+
+      .modal-content {
+        background-color: #dddddd;
+        margin: 12% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 50%;
+      }
+
+      .modal-footer {
+        text-align: center;
+      }
+
+      #modeOptions {
+        position: absolute;
+        top: 50px;
+        left: 10px;
+        color: white;
+      }
+
+      #LeftRightChannels {
+        position: absolute;
+        top: 90px;
+        left: 10px;
+        color: white;
+        display: none;
+      }
+
+      #XYFlipOptions {
+        position: absolute;
+        top: 90px;
+        left: 10px;
+        color: white;
+        display: block;
+      }
+
+      .bordered {
+        padding: 4px;
+        margin-right: 20px;
+        border: 1px solid gray;
+      }
+
+      #header {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        color: greenyellow;
+      }
+
+      #header a {
+        color: hotpink;
+      }
+    </style>
+  </head>
+
+  <body>
+    <canvas
+      id="scope"
+      width="1024"
+      height="1024"
+      onclick="connectAudioAPI(); "
+    ></canvas>
+
+    <!--
+    <span id="modeOptions">Mode:&nbsp;&nbsp;
+        <label class="bordered">
+            <input type="radio" name="rdoDisplayMode" id="0" onclick="setXYMode(0);" checked/>X Y</label>
+        <label class="bordered">
+            <input type="radio" name="rdoDisplayMode" id="1" onclick="setXYMode(1);" />Waveform</label>
+        <label class="bordered">
+            <input type="radio" name="rdoDisplayMode" id="1" onclick="setXYMode(2);" />Spectrum</label>
+    </span>
+    <span id="LeftRightChannels">
+        <label class="bordered">
+            <input type="checkbox" onchange="toggleLeft();" checked />Left Channel
+        </label>
+        <label class="bordered">
+            <input type="checkbox" onchange="toggleRight();" checked />Right Channel
+        </label>
+    </span>
+    <span id="XYFlipOptions">
+        <label class="bordered">
+            <input type="checkbox" onchange="changeflipX();" checked />Flip X
+        </label>
+        <label class="bordered">
+            <input type="checkbox" onchange="changeflipY();" checked />Flip Y
+        </label>
+    </span>
+-->
+
+    <script lang="javascript ">
+
+      var AudioContext = window.AudioContext || window.webkitAudioContext || false;
+
+      var XYMode = 1;
+      var connected = false;
+      var context;
+
+      var currentStream;
+      var mediaSource, mediaBuffer, remoteDestination;
+      var analyser1;
+      var analyser2;
+      var splitter;
+      var javascriptNode;
+
+      function setXYMode(b) {
+          if (b === 0) {
+              XYMode = 0;
+              document.getElementById("XYFlipOptions").style.display = "block";
+              document.getElementById("LeftRightChannels").style.display = "none";
+              analyser1.fftSize = 4096;
+              analyser2.fftSize = 4096;
+          } else if (b === 1) {
+              XYMode = 1;
+              document.getElementById("XYFlipOptions").style.display = "none";
+              document.getElementById("LeftRightChannels").style.display = "block";
+              analyser1.fftSize = 2048;
+              analyser2.fftSize = 2048;
+          } else {
+              XYMode = 2;
+              document.getElementById("XYFlipOptions").style.display = "none";
+              document.getElementById("LeftRightChannels").style.display = "block";
+              analyser1.fftSize = 2048;
+              analyser2.fftSize = 2048;
+          }
+      }
+
+      var leftChannel = true;
+      var rightChannel = true;
+      function toggleLeft() {
+          leftChannel = !leftChannel;
+      }
+      function toggleRight() {
+          rightChannel = !rightChannel;
+      }
+      function connectAudioAPI() {
+          try {
+              context = new AudioContext();
+
+              analyser1 = context.createAnalyser();
+              analyser1.fftSize = 512;
+
+              analyser2 = context.createAnalyser();
+              analyser2.fftSize = 512;
+
+              splitter = context.createChannelSplitter();
+
+              javascriptNode = context.createScriptProcessor(2048, 1, 1);
+
+
+              connectInput();
+          } catch (e) {
+              alert(e);
+          }
+      }
+
+      function connectInput() {
+          navigator.mediaDevices.getUserMedia({ audio: true })
+              .then(function (mediaStream) {
+                  gotStream(mediaStream);
+              }).catch(function (e) {
+                  alert("In connectInput : " + e);
+              });
+
+      }
+
+      function gotStream(stream) {
+          try {
+
+              mediaSource = context.createMediaStreamSource(stream);
+
+              mediaSource.connect(splitter);
+
+              splitter.connect(analyser1, 0, 0);
+              splitter.connect(analyser2, 1, 0);
+
+              //document.getElementById("myModal").style.display = "none";
+              resizeCanvas();
+
+              javascriptNode.connect(context.destination);
+              javascriptNode.onaudioprocess = function () {
+                  drawScope();
+              }
+
+          } catch (e) {
+              alert("In gotStream : " + e);
+          }
+      }
+
+
+      var ctx = document.getElementById('scope').getContext('2d');
+      var width = 1024;
+      var height = 1024;
+      var canvasData = ctx.getImageData(0, 0, width, height);
+      var canvasBlankData = ctx.getImageData(0, 0, width, height);
+
+      window.addEventListener('resize', resizeCanvas, false);
+      function resizeCanvas() {
+          document.getElementById('scope').style.width = window.innerWidth + "px";
+          document.getElementById('scope').style.height = window.innerHeight + "px";
+      }
+
+      var flipX = false;
+      var flipY = false;
+      var scaleX = 4;
+      var scaleY = 4;
+
+      function drawScope() {
+
+          var timeData1 = new Uint8Array(analyser1.frequencyBinCount);
+          var timeData2 = new Uint8Array(analyser2.frequencyBinCount);
+
+        analyser1.getByteTimeDomainData(timeData1);
+        analyser2.getByteTimeDomainData(timeData2);
+
+        ctx.fillStyle = "rgb(0, 0, 0) ";
+        ctx.fillRect(0, 0, 1024, 1024);
+        ctx.strokeStyle = 'rgb(255, 255, 255)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+            for (var x = 0; x < 512; x++) {
+                ctx.lineTo(x*4, 1024 - ((timeData2[x]) * 4));
+            }
+            ctx.stroke();
+      }
+
+      function changeflipX(e) {
+          flipX = !flipX;
+      }
+      function changeflipY(e) {
+          flipY = !flipY;
+      }
+    </script>
+  </body>
+</html>
