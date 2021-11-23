@@ -190,7 +190,9 @@
       }
       function connectAudioAPI() {
           try {
-              context = new AudioContext();
+            connectInput();
+
+            context = new AudioContext();
 
               analyser1 = context.createAnalyser();
               analyser1.fftSize = 512;
@@ -203,7 +205,6 @@
               javascriptNode = context.createScriptProcessor(2048, 1, 1);
 
 
-              connectInput();
           } catch (e) {
               alert(e);
           }
