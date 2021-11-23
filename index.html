@@ -145,147 +145,147 @@
 
     <script lang="javascript ">
 
-      var AudioContext = window.webkitAudioContext || false;
+      var AudioContext = window.AudioContext || window.webkitAudioContext || false;
 
-      var XYMode = 1;
-      var connected = false;
-      var context;
+            var XYMode = 1;
+            var connected = false;
+            var context;
 
-      var currentStream;
-      var mediaSource, mediaBuffer, remoteDestination;
-      var analyser1;
-      var analyser2;
-      var splitter;
-      var javascriptNode;
+            var currentStream;
+            var mediaSource, mediaBuffer, remoteDestination;
+            var analyser1;
+            var analyser2;
+            var splitter;
+            var javascriptNode;
 
-      function setXYMode(b) {
-          if (b === 0) {
-              XYMode = 0;
-              document.getElementById("XYFlipOptions").style.display = "block";
-              document.getElementById("LeftRightChannels").style.display = "none";
-              analyser1.fftSize = 4096;
-              analyser2.fftSize = 4096;
-          } else if (b === 1) {
-              XYMode = 1;
-              document.getElementById("XYFlipOptions").style.display = "none";
-              document.getElementById("LeftRightChannels").style.display = "block";
-              analyser1.fftSize = 2048;
-              analyser2.fftSize = 2048;
-          } else {
-              XYMode = 2;
-              document.getElementById("XYFlipOptions").style.display = "none";
-              document.getElementById("LeftRightChannels").style.display = "block";
-              analyser1.fftSize = 2048;
-              analyser2.fftSize = 2048;
-          }
-      }
-
-      var leftChannel = true;
-      var rightChannel = true;
-      function toggleLeft() {
-          leftChannel = !leftChannel;
-      }
-      function toggleRight() {
-          rightChannel = !rightChannel;
-      }
-      function connectAudioAPI() {
-          try {
-            connectInput();
-
-            context = new AudioContext();
-
-              analyser1 = context.createAnalyser();
-              analyser1.fftSize = 512;
-
-              analyser2 = context.createAnalyser();
-              analyser2.fftSize = 512;
-
-              splitter = context.createChannelSplitter();
-
-              javascriptNode = context.createScriptProcessor(2048, 1, 1);
-
-
-          } catch (e) {
-              alert(e);
-          }
-      }
-
-      function connectInput() {
-          navigator.mediaDevices.getUserMedia({ audio: true })
-              .then(function (mediaStream) {
-                  gotStream(mediaStream);
-              }).catch(function (e) {
-                  alert("In connectInput : " + e);
-              });
-
-      }
-
-      function gotStream(stream) {
-          try {
-
-              mediaSource = context.createMediaStreamSource(stream);
-
-              mediaSource.connect(splitter);
-
-              splitter.connect(analyser1, 0, 0);
-              splitter.connect(analyser2, 1, 0);
-
-              //document.getElementById("myModal").style.display = "none";
-              resizeCanvas();
-
-              javascriptNode.connect(context.destination);
-              javascriptNode.onaudioprocess = function () {
-                  drawScope();
-              }
-
-          } catch (e) {
-              alert("In gotStream : " + e);
-          }
-      }
-
-
-      var ctx = document.getElementById('scope').getContext('2d');
-      var width = 1024;
-      var height = 1024;
-      var canvasData = ctx.getImageData(0, 0, width, height);
-      var canvasBlankData = ctx.getImageData(0, 0, width, height);
-
-      window.addEventListener('resize', resizeCanvas, false);
-      function resizeCanvas() {
-          document.getElementById('scope').style.width = window.innerWidth + "px";
-          document.getElementById('scope').style.height = window.innerHeight + "px";
-      }
-
-      var flipX = false;
-      var flipY = false;
-      var scaleX = 4;
-      var scaleY = 4;
-
-      function drawScope() {
-
-          var timeData1 = new Uint8Array(analyser1.frequencyBinCount);
-          var timeData2 = new Uint8Array(analyser2.frequencyBinCount);
-
-        analyser1.getByteTimeDomainData(timeData1);
-        analyser2.getByteTimeDomainData(timeData2);
-
-        ctx.fillStyle = "rgb(0, 0, 0) ";
-        ctx.fillRect(0, 0, 1024, 1024);
-        ctx.strokeStyle = 'rgb(255, 127, 255)';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-            for (var x = 0; x < 512; x++) {
-                ctx.lineTo(x*4, 1024 - ((timeData1[x]+timeData2[x]) * 2));
+            function setXYMode(b) {
+                if (b === 0) {
+                    XYMode = 0;
+                    document.getElementById("XYFlipOptions").style.display = "block";
+                    document.getElementById("LeftRightChannels").style.display = "none";
+                    analyser1.fftSize = 4096;
+                    analyser2.fftSize = 4096;
+                } else if (b === 1) {
+                    XYMode = 1;
+                    document.getElementById("XYFlipOptions").style.display = "none";
+                    document.getElementById("LeftRightChannels").style.display = "block";
+                    analyser1.fftSize = 2048;
+                    analyser2.fftSize = 2048;
+                } else {
+                    XYMode = 2;
+                    document.getElementById("XYFlipOptions").style.display = "none";
+                    document.getElementById("LeftRightChannels").style.display = "block";
+                    analyser1.fftSize = 2048;
+                    analyser2.fftSize = 2048;
+                }
             }
-            ctx.stroke();
-      }
 
-      function changeflipX(e) {
-          flipX = !flipX;
-      }
-      function changeflipY(e) {
-          flipY = !flipY;
-      }
+            var leftChannel = true;
+            var rightChannel = true;
+            function toggleLeft() {
+                leftChannel = !leftChannel;
+            }
+            function toggleRight() {
+                rightChannel = !rightChannel;
+            }
+            function connectAudioAPI() {
+                try {
+                  connectInput();
+
+                  context = new AudioContext();
+
+                    analyser1 = context.createAnalyser();
+                    analyser1.fftSize = 512;
+
+                    analyser2 = context.createAnalyser();
+                    analyser2.fftSize = 512;
+
+                    splitter = context.createChannelSplitter();
+
+                    javascriptNode = context.createScriptProcessor(2048, 1, 1);
+
+
+                } catch (e) {
+                    alert(e);
+                }
+            }
+
+            function connectInput() {
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(function (mediaStream) {
+                        gotStream(mediaStream);
+                    }).catch(function (e) {
+                        alert("In connectInput : " + e);
+                    });
+
+            }
+
+            function gotStream(stream) {
+                try {
+
+                    mediaSource = context.createMediaStreamSource(stream);
+
+                    mediaSource.connect(splitter);
+
+                    splitter.connect(analyser1, 0, 0);
+                    splitter.connect(analyser2, 1, 0);
+
+                    //document.getElementById("myModal").style.display = "none";
+                    resizeCanvas();
+
+                    javascriptNode.connect(context.destination);
+                    javascriptNode.onaudioprocess = function () {
+                        drawScope();
+                    }
+
+                } catch (e) {
+                    alert("In gotStream : " + e);
+                }
+            }
+
+
+            var ctx = document.getElementById('scope').getContext('2d');
+            var width = 1024;
+            var height = 1024;
+            var canvasData = ctx.getImageData(0, 0, width, height);
+            var canvasBlankData = ctx.getImageData(0, 0, width, height);
+
+            window.addEventListener('resize', resizeCanvas, false);
+            function resizeCanvas() {
+                document.getElementById('scope').style.width = window.innerWidth + "px";
+                document.getElementById('scope').style.height = window.innerHeight + "px";
+            }
+
+            var flipX = false;
+            var flipY = false;
+            var scaleX = 4;
+            var scaleY = 4;
+
+            function drawScope() {
+
+                var timeData1 = new Uint8Array(analyser1.frequencyBinCount);
+                var timeData2 = new Uint8Array(analyser2.frequencyBinCount);
+
+              analyser1.getByteTimeDomainData(timeData1);
+              analyser2.getByteTimeDomainData(timeData2);
+
+              ctx.fillStyle = "rgb(0, 0, 0) ";
+              ctx.fillRect(0, 0, 1024, 1024);
+              ctx.strokeStyle = 'rgb(255, 127, 255)';
+              ctx.lineWidth = 3;
+              ctx.beginPath();
+                  for (var x = 0; x < 512; x++) {
+                      ctx.lineTo(x*4, 1024 - ((timeData1[x]+timeData2[x]) * 2));
+                  }
+                  ctx.stroke();
+            }
+
+            function changeflipX(e) {
+                flipX = !flipX;
+            }
+            function changeflipY(e) {
+                flipY = !flipY;
+            }
     </script>
   </body>
 </html>
